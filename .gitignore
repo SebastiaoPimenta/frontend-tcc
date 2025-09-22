@@ -1,0 +1,125 @@
+# Dependencies
+frontend-app/node_modules/
+frontend-app/npm-debug.log*
+frontend-app/yarn-debug.log*
+frontend-app/yarn-error.log*
+
+# Runtime data
+frontend-app/pids
+frontend-app/*.pid
+frontend-app/*.seed
+frontend-app/*.pid.lock
+
+# Coverage directory used by tools like istanbul
+frontend-app/coverage/
+
+# nyc test coverage
+frontend-app/.nyc_output
+
+# Grunt intermediate storage
+frontend-app/.grunt
+
+# Bower dependency directory
+frontend-app/bower_components
+
+# node-waf configuration
+frontend-app/.lock-wscript
+
+# Compiled binary addons
+frontend-app/build/Release
+
+# Dependency directories
+frontend-app/jspm_packages/
+
+# TypeScript v1 declaration files
+frontend-app/typings/
+
+# Optional npm cache directory
+frontend-app/.npm
+
+# Optional eslint cache
+frontend-app/.eslintcache
+
+# Microbundle cache
+frontend-app/.rpt2_cache/
+frontend-app/.rts2_cache_cjs/
+frontend-app/.rts2_cache_es/
+frontend-app/.rts2_cache_umd/
+
+# Optional REPL history
+frontend-app/.node_repl_history
+
+# Output of 'npm pack'
+frontend-app/*.tgz
+
+# Yarn Integrity file
+frontend-app/.yarn-integrity
+
+# parcel-bundler cache
+frontend-app/.cache
+frontend-app/.parcel-cache
+
+# Next.js build output
+frontend-app/.next
+
+# Nuxt.js build / generate output
+frontend-app/.nuxt
+frontend-app/dist
+
+# Gatsby files
+frontend-app/.cache/
+
+# Storybook build outputs
+frontend-app/.out
+frontend-app/.storybook-out
+
+# Temporary folders
+frontend-app/tmp/
+frontend-app/temp/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+coverage/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Angular specific
+frontend-app/.angular/
+frontend-app/dist/
+frontend-app/out-tsc/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build outputs
+frontend-app/build/
+frontend-app/dist/
