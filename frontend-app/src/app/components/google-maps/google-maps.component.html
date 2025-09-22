@@ -1,0 +1,42 @@
+<div class="maps-container">
+  <div class="maps-header">
+    <h3>Selecionar Localizações</h3>
+    <p class="instruction" *ngIf="isSelectingStartLocation">
+      Clique no mapa para selecionar o local de partida
+    </p>
+    <p class="instruction" *ngIf="isSelectingDeliveryLocation">
+      Clique no mapa para adicionar pontos de entrega
+    </p>
+  </div>
+
+  <!-- Indicador de carregamento do Google Maps -->
+  <div *ngIf="!isGoogleMapsLoaded" class="loading-indicator">
+    <div class="loading-spinner"></div>
+    <p>Carregando Google Maps...</p>
+    <p class="loading-help">Se o mapa não carregar, verifique sua conexão ou se as APIs estão habilitadas no Google Cloud Console.</p>
+  </div>
+
+  <!-- Google Maps -->
+  <google-map 
+    *ngIf="isGoogleMapsLoaded"
+    height="400px" 
+    width="100%"
+    [center]="center"
+    [zoom]="zoom"
+    (mapClick)="onMapClick($event)">
+    
+    <!-- Marcador do local de partida -->
+    <map-marker
+      *ngIf="startLocationMarker"
+      [position]="startLocationMarker"
+      [options]="startMarkerOptions">
+    </map-marker>
+    
+    <!-- Marcadores dos pontos de entrega -->
+    <map-marker
+      *ngFor="let marker of deliveryMarkers"
+      [position]="marker"
+      [options]="deliveryMarkerOptions">
+    </map-marker>
+  </google-map>
+</div>

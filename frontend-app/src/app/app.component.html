@@ -1,0 +1,230 @@
+<div class="app-container">
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-content">
+      <h1>{{ title }}</h1>
+      <p>Otimização inteligente de rotas para produtos agropecuários</p>
+      <button (click)="resetAll()" class="btn-reset">
+        🔄 Reiniciar Processo
+      </button>
+    </div>
+  </header>
+
+  <!-- Progress Steps -->
+  <div class="progress-container">
+    <div class="progress-steps">
+      <div 
+        *ngFor="let step of [1,2,3,4]; let i = index"
+        class="progress-step"
+        [class.active]="currentStep === step"
+        [class.completed]="isStepValid(step)"
+        (click)="goToStep(step)">
+        <div class="step-number">{{ step }}</div>
+        <div class="step-label">
+          <span *ngIf="step === 1">Local de Início</span>
+          <span *ngIf="step === 2">Pontos de Entrega</span>
+          <span *ngIf="step === 3">Produtos & Config</span>
+          <span *ngIf="step === 4">Resultado</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <!-- Step 1: Start Location -->
+    <section *ngIf="currentStep === 1" class="step-content">
+      <div class="step-header">
+        <h2>🏭 Selecione o Local de Início</h2>
+        <p>Clique no mapa para definir o ponto de partida da rota (fazenda, centro de distribuição, etc.)</p>
+      </div>
+
+      <div class="location-info" *ngIf="startLocation">
+        <div class="info-card">
+          <h3>📍 Local Selecionado</h3>
+          <p><strong>Endereço:</strong> {{ startLocation.address }}</p>
+          <p><strong>Coordenadas:</strong> {{ startLocation.latitude | number:'1.6-6' }}, {{ startLocation.longitude | number:'1.6-6' }}</p>
+          <p *ngIf="startLocation.city"><strong>Cidade:</strong> {{ startLocation.city }}, {{ startLocation.state }}</p>
+        </div>
+      </div>
+
+      <div class="map-controls">
+        <button 
+          (click)="startSelectingStartLocation()" 
+          [class.active]="isSelectingStartLocation"
+          class="btn-map-action">
+          {{ isSelectingStartLocation ? 'Clique no mapa...' : 'Selecionar Local de Início' }}
+        </button>
+      </div>
+
+      <app-google-maps
+        [isSelectingStartLocation]="isSelectingStartLocation"
+        [isSelectingDeliveryLocation]="false"
+        (startLocationSelected)="onStartLocationSelected($event)">
+      </app-google-maps>
+    </section>
+
+    <!-- Step 2: Delivery Locations -->
+    <section *ngIf="currentStep === 2" class="step-content">
+      <div class="step-header">
+        <h2>🚚 Pontos de Entrega</h2>
+        <p>Adicione os locais onde os produtos serão entregues</p>
+      </div>
+
+      <div class="delivery-summary" *ngIf="deliveries.length > 0">
+        <h3>Entregas Cadastradas ({{ deliveries.length }})</h3>
+        <div class="delivery-list-summary">
+          <div 
+            *ngFor="let delivery of deliveries; let i = index" 
+            class="delivery-item-summary">
+            <div class="delivery-number">{{ i + 1 }}</div>
+            <div class="delivery-info-summary">
+              <p class="delivery-address">{{ delivery.location.address || 'Endereço não definido' }}</p>
+              <p class="delivery-customer">{{ delivery.customerName || 'Cliente não informado' }}</p>
+            </div>
+            <button (click)="removeDelivery(i)" class="btn-remove-small">❌</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="map-controls">
+        <button 
+          (click)="startSelectingDeliveryLocation()" 
+          [class.active]="isSelectingDeliveryLocation"
+          class="btn-map-action">
+          {{ isSelectingDeliveryLocation ? 'Clique no mapa...' : '+ Adicionar Ponto de Entrega' }}
+        </button>
+      </div>
+
+      <app-google-maps
+        [isSelectingStartLocation]="false"
+        [isSelectingDeliveryLocation]="isSelectingDeliveryLocation"
+        (deliveryLocationSelected)="onDeliveryLocationSelected($event)">
+      </app-google-maps>
+    </section>
+
+    <!-- Step 3: Products and Configuration -->
+    <section *ngIf="currentStep === 3" class="step-content">
+      <div class="step-header">
+        <h2>📦 Produtos e Configurações</h2>
+        <p>Configure os produtos para cada entrega e parâmetros do veículo</p>
+      </div>
+
+      <!-- Vehicle Configuration -->
+      <div class="config-section">
+        <h3>🚛 Configurações do Veículo</h3>
+        <form [formGroup]="configForm" class="config-form">
+          <div class="config-row">
+            <div class="config-group">
+              <label for="vehicleSpeed">Velocidade Média (km/h)</label>
+              <input 
+                type="number" 
+                id="vehicleSpeed"
+                formControlName="vehicleSpeedKmH"
+                min="10" 
+                max="150">
+            </div>
+            <div class="config-group">
+              <label for="loadingTime">Tempo de Carregamento (min)</label>
+              <input 
+                type="number" 
+                id="loadingTime"
+                formControlName="loadingTimeMinutes"
+                min="5" 
+                max="120">
+            </div>
+            <div class="config-group">
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  formControlName="useGoogleMaps">
+                Usar Google Maps API
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Products for each delivery -->
+      <div class="deliveries-products">
+        <div 
+          *ngFor="let delivery of deliveries; let i = index" 
+          class="delivery-products-section">
+          <h3>Entrega {{ i + 1 }}: {{ delivery.location.address }}</h3>
+          
+          <app-product-form
+            [customerName]="delivery.customerName"
+            [customerPhone]="delivery.customerPhone"
+            [priority]="delivery.priority"
+            (productsChanged)="onProductsChanged($event, i)"
+            (customerInfoChanged)="onCustomerInfoChanged($event, i)">
+          </app-product-form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 4: Results -->
+    <section *ngIf="currentStep === 4" class="step-content">
+      <div class="step-header">
+        <h2>📊 Resultado da Otimização</h2>
+        <p>Rota otimizada usando algoritmo genético</p>
+      </div>
+
+      <app-route-results
+        [results]="optimizationResults"
+        [isLoading]="isOptimizing"
+        [error]="optimizationError">
+      </app-route-results>
+    </section>
+
+  </main>
+
+  <!-- Navigation Footer -->
+  <footer class="nav-footer">
+    <div class="nav-buttons">
+      <button 
+        (click)="previousStep()" 
+        [disabled]="currentStep === 1"
+        class="btn-nav btn-secondary">
+        ← Anterior
+      </button>
+
+      <div class="step-info">
+        Etapa {{ currentStep }} de {{ maxSteps }}
+      </div>
+
+      <button 
+        *ngIf="currentStep < 3"
+        (click)="nextStep()" 
+        [disabled]="!isStepValid(currentStep)"
+        class="btn-nav btn-primary">
+        Próximo →
+      </button>
+
+      <button 
+        *ngIf="currentStep === 3"
+        (click)="optimizeRoute()" 
+        [disabled]="!canOptimize() || isOptimizing"
+        class="btn-nav btn-success">
+        {{ isOptimizing ? 'Otimizando...' : '🚀 Otimizar Rota' }}
+      </button>
+
+      <!-- Botão de debug temporário -->
+      <button 
+        *ngIf="currentStep === 3"
+        (click)="debugValidation()" 
+        class="btn-nav btn-debug"
+        style="background: #ff9800; margin-left: 10px;">
+        🐛 Debug
+      </button>
+
+      <button 
+        *ngIf="currentStep === 4"
+        (click)="resetAll()" 
+        class="btn-nav btn-primary">
+        🔄 Nova Otimização
+      </button>
+    </div>
+  </footer>
+</div>

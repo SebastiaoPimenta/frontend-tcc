@@ -1,0 +1,162 @@
+<div class="product-form-container">
+  <form [formGroup]="productForm" class="product-form">
+    
+    <!-- Informações do Cliente -->
+    <div class="customer-section">
+      <h3>Informações do Cliente</h3>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="customerName">Nome do Cliente *</label>
+          <input 
+            type="text" 
+            id="customerName"
+            formControlName="customerName"
+            [class.invalid]="isFieldInvalid('customerName')"
+            placeholder="Ex: Padaria Central">
+          <div *ngIf="isFieldInvalid('customerName')" class="error-message">
+            Nome do cliente é obrigatório (mínimo 2 caracteres)
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="customerPhone">Telefone *</label>
+          <input 
+            type="text" 
+            id="customerPhone"
+            formControlName="customerPhone"
+            [class.invalid]="isFieldInvalid('customerPhone')"
+            placeholder="(11) 99999-9999">
+          <div *ngIf="isFieldInvalid('customerPhone')" class="error-message">
+            Formato: (11) 99999-9999
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="priority">Prioridade *</label>
+          <input 
+            type="number" 
+            id="priority"
+            formControlName="priority"
+            min="1" 
+            max="10"
+            [class.invalid]="isFieldInvalid('priority')">
+          <small>1 = máxima prioridade, 10 = menor prioridade</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Produtos -->
+    <div class="products-section">
+      <div class="products-header">
+        <h3>Produtos para Entrega</h3>
+        <button type="button" (click)="addProduct()" class="btn-add-product">
+          + Adicionar Produto
+        </button>
+      </div>
+
+      <div formArrayName="products" class="products-list">
+        <div 
+          *ngFor="let product of products.controls; let i = index" 
+          [formGroupName]="i" 
+          class="product-item">
+          
+          <div class="product-header">
+            <h4>Produto {{ i + 1 }}</h4>
+            <button 
+              type="button" 
+              (click)="removeProduct(i)"
+              [disabled]="products.length <= 1"
+              class="btn-remove-product">
+              Remover
+            </button>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nome do Produto *</label>
+              <input 
+                type="text" 
+                formControlName="name"
+                [class.invalid]="isProductFieldInvalid(i, 'name')"
+                placeholder="Ex: Leite Fresco">
+              <div *ngIf="isProductFieldInvalid(i, 'name')" class="error-message">
+                Nome é obrigatório
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Tipo *</label>
+              <select 
+                formControlName="type"
+                [class.invalid]="isProductFieldInvalid(i, 'type')">
+                <option value="">Selecione...</option>
+                <option *ngFor="let type of productTypes" [value]="type">
+                  {{ type }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Quantidade *</label>
+              <input 
+                type="number" 
+                formControlName="quantity"
+                step="0.1"
+                min="0.1"
+                [class.invalid]="isProductFieldInvalid(i, 'quantity')">
+            </div>
+
+            <div class="form-group">
+              <label>Unidade *</label>
+              <select 
+                formControlName="unit"
+                [class.invalid]="isProductFieldInvalid(i, 'unit')">
+                <option value="">Selecione...</option>
+                <option *ngFor="let unit of units" [value]="unit">
+                  {{ unit }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Tempo Máximo de Entrega (horas) *</label>
+              <input 
+                type="number" 
+                [value]="getMaxDeliveryTimeInHours(product.value.maxDeliveryTimeMinutes || 240)"
+                (input)="setMaxDeliveryTimeFromHours($any($event.target).value, i)"
+                step="0.5"
+                min="0.5"
+                max="24"
+                [class.invalid]="isProductFieldInvalid(i, 'maxDeliveryTimeMinutes')">
+              <small>Tempo antes do produto estragar ({{ product.value.maxDeliveryTimeMinutes || 240 }} minutos)</small>
+            </div>
+
+            <div class="form-group">
+              <label>Temperatura *</label>
+              <select 
+                formControlName="temperature"
+                [class.invalid]="isProductFieldInvalid(i, 'temperature')">
+                <option value="">Selecione...</option>
+                <option *ngFor="let temp of temperatureOptions" [value]="temp">
+                  {{ temp | titlecase }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group full-width">
+              <label>Descrição</label>
+              <textarea 
+                formControlName="description"
+                rows="2"
+                placeholder="Descrição adicional do produto (opcional)">
+              </textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>

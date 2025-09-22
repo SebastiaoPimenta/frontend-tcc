@@ -1,0 +1,107 @@
+<div class="results-container">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Otimizando rota com algoritmo genético...</p>
+    <small>Este processo pode levar alguns segundos</small>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !isLoading" class="error-state">
+    <div class="error-icon">❌</div>
+    <h3>Erro na Otimização</h3>
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- Results -->
+  <div *ngIf="results && !isLoading && !error" class="results-content">
+    <div class="results-header">
+      <h2>Resultado da Otimização</h2>
+      <div class="status-badge" [ngClass]="getStatusClass()">
+        <span class="status-icon">{{ getStatusIcon() }}</span>
+        <span class="status-text">
+          {{ results.feasible ? 'Rota Viável' : 'Rota com Restrições' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="message-card">
+      <p>{{ results.message }}</p>
+    </div>
+
+    <!-- Métricas Principais -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-icon">📏</div>
+        <div class="metric-content">
+          <h3>{{ results.totalDistanceKm | number:'1.1-1' }} km</h3>
+          <p>Distância Total</p>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon">⏱️</div>
+        <div class="metric-content">
+          <h3>{{ totalTimeInHours }}h</h3>
+          <p>Tempo Total ({{ results.totalTimeMinutes }} min)</p>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon">🚚</div>
+        <div class="metric-content">
+          <h3>{{ results.deliveryOrder.length }}</h3>
+          <p>Entregas</p>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon">⚡</div>
+        <div class="metric-content">
+          <h3>{{ executionTimeInSeconds }}s</h3>
+          <p>Tempo de Processamento</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ordem de Entregas -->
+    <div class="delivery-order-section">
+      <h3>Ordem Otimizada de Entregas</h3>
+      <div class="delivery-list">
+        <div 
+          *ngFor="let delivery of results.deliveryOrder; let i = index" 
+          class="delivery-item">
+          <div class="delivery-number">{{ i + 1 }}</div>
+          <div class="delivery-info">
+            <h4>{{ delivery.customerName }}</h4>
+            <p class="delivery-address">{{ delivery.location.address }}</p>
+            <div class="delivery-products">
+              <span 
+                *ngFor="let product of delivery.products; let last = last"
+                class="product-tag">
+                {{ product.name }} ({{ product.quantity }} {{ product.unit }}){{ !last ? ', ' : '' }}
+              </span>
+            </div>
+            <div class="delivery-contact">
+              <span class="phone">📞 {{ delivery.customerPhone }}</span>
+              <span class="priority">Prioridade: {{ delivery.priority }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sequência de Índices -->
+    <div class="route-sequence">
+      <h4>Sequência da Rota:</h4>
+      <div class="sequence-chips">
+        <span class="sequence-chip start">Início</span>
+        <span 
+          *ngFor="let index of results.optimizedRoute; let i = index"
+          class="sequence-chip">
+          {{ index + 1 }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
