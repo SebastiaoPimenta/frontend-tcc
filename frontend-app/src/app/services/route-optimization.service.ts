@@ -5,12 +5,13 @@ import {
   RouteOptimizationRequest, 
   RouteOptimizationResponse 
 } from '../models';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RouteOptimizationService {
-  private readonly baseUrl = 'http://localhost:8080/api/route-optimization';
+  private readonly baseUrl = `${environment.backendUrl}/api/route-optimization`;
   
   private httpOptions = {
     headers: new HttpHeaders({
