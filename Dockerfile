@@ -16,8 +16,14 @@ COPY frontend-app/ .
 # Build da aplicação Angular para produção
 RUN npm run build -- --configuration production
 
+# Verificar se o build foi criado corretamente
+RUN ls -la /app/dist/
+
 # Estágio de produção com Nginx
 FROM nginx:alpine
+
+# Remover arquivos padrão do nginx
+RUN rm -rf /usr/share/nginx/html/*
 
 # Copiar configuração customizada do Nginx
 COPY frontend-app/nginx.conf /etc/nginx/nginx.conf
