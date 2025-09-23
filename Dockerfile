@@ -14,7 +14,7 @@ RUN npm ci
 COPY frontend-app/ .
 
 # Build da aplicação Angular para produção
-RUN npm run build --configuration production
+RUN npm run build -- --configuration production
 
 # Estágio de produção com Nginx
 FROM nginx:alpine
