@@ -25,6 +25,9 @@ COPY frontend-app/nginx.conf /etc/nginx/nginx.conf
 # Copiar arquivos buildados para o Nginx
 COPY --from=build /app/dist/frontend-app /usr/share/nginx/html
 
+# Verificar se os arquivos foram copiados corretamente
+RUN ls -la /usr/share/nginx/html/
+
 # Expor porta 80
 EXPOSE 80
 
