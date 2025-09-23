@@ -31,8 +31,12 @@ COPY frontend-app/nginx.conf /etc/nginx/nginx.conf
 # Copiar arquivos buildados para o Nginx
 COPY --from=build /app/dist/frontend-app /usr/share/nginx/html
 
+# Definir permissões corretas para os arquivos
+RUN chmod -R 755 /usr/share/nginx/html
+
 # Verificar se os arquivos foram copiados corretamente
 RUN ls -la /usr/share/nginx/html/
+RUN ls -la /usr/share/nginx/html/index.html || echo "index.html not found!"
 
 # Expor porta 80
 EXPOSE 80
