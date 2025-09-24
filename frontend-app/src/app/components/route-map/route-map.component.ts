@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, ViewChild, ElementRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GoogleMapsModule } from '@angular/google-maps';
 import { RouteOptimizationResponse } from '../../models/route-optimization-response.interface';
@@ -16,13 +16,18 @@ import { Location } from '../../models/location.interface';
       </div>
 
       <div *ngIf="results && results.deliveryOrder.length > 0" class="map-wrapper">
+        <div *ngIf="isLoadingRoute" class="loading-route">
+          <p>📍 Calculando rota real pelas ruas...</p>
+        </div>
+        
         <google-map
           #googleMap
           [height]="mapHeight"
           [width]="mapWidth"
           [center]="mapCenter"
           [zoom]="mapZoom"
-          [options]="mapOptions">
+          [options]="mapOptions"
+          (mapInitialized)="onMapInitialized($event)">
           
           <!-- Marcadores baseados na sequência otimizada -->
           <map-marker
@@ -32,9 +37,9 @@ import { Location } from '../../models/location.interface';
             [options]="getMarkerOptions(sequenceIndex)">
           </map-marker>
 
-          <!-- Linhas da rota -->
+          <!-- Linhas da rota (apenas se não estiver usando directions) -->
           <map-polyline
-            *ngIf="routePath.length > 1"
+            *ngIf="routePath.length > 1 && !showDirections"
             [path]="routePath"
             [options]="polylineOptions">
           </map-polyline>
@@ -143,6 +148,22 @@ import { Location } from '../../models/location.interface';
       color: #374151;
     }
 
+    .loading-route {
+      background: #e3f2fd;
+      border: 1px solid #2196f3;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      color: #1976d2;
+      font-size: 0.9rem;
+    }
+
+    .loading-route p {
+      margin: 0;
+      font-weight: 500;
+    }
+
     @media (max-width: 768px) {
       .route-legend {
         flex-direction: column;
@@ -151,10 +172,15 @@ import { Location } from '../../models/location.interface';
     }
   `]
 })
-export class RouteMapComponent implements OnChanges {
+export class RouteMapComponent implements OnInit, OnChanges {
   @Input() results: RouteOptimizationResponse | null = null;
   @Input() startLocation: Location | null = null;
   @ViewChild('googleMap') googleMapRef!: ElementRef;
+
+  // Serviços do Google Maps
+  private directionsService!: google.maps.DirectionsService;
+  private directionsRenderer!: google.maps.DirectionsRenderer;
+  private mapInstance: google.maps.Map | null = null;
 
   mapHeight = '400px';
   mapWidth = '100%';
@@ -185,6 +211,21 @@ export class RouteMapComponent implements OnChanges {
   };
 
   routePath: google.maps.LatLngLiteral[] = [];
+  showDirections = false; // Para controlar quando mostrar directions vs polyline
+  isLoadingRoute = false; // Para mostrar loading da rota real
+
+  ngOnInit(): void {
+    // Inicializar serviços do Google Maps
+    this.directionsService = new google.maps.DirectionsService();
+    this.directionsRenderer = new google.maps.DirectionsRenderer({
+      suppressMarkers: true, // Não mostrar marcadores padrão
+      polylineOptions: {
+        strokeColor: '#3b82f6',
+        strokeOpacity: 1.0,
+        strokeWeight: 4
+      }
+    });
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if ((changes['results'] && this.results) || (changes['startLocation'] && this.startLocation)) {
@@ -202,6 +243,9 @@ export class RouteMapComponent implements OnChanges {
 
     // Calcular o centro do mapa baseado nas coordenadas
     this.calculateMapCenter();
+
+    // Calcular rota real usando Google Directions
+    this.calculateRealRoute();
   }
 
   private buildOptimizedRoutePath(): google.maps.LatLngLiteral[] {
@@ -233,6 +277,77 @@ export class RouteMapComponent implements OnChanges {
     }
 
     return path;
+  }
+
+  private calculateRealRoute(): void {
+    if (!this.results?.optimizedRoute || !this.startLocation || this.routePath.length < 2) {
+      return;
+    }
+
+    this.isLoadingRoute = true;
+
+    // Preparar waypoints para o DirectionsService
+    const waypoints: google.maps.DirectionsWaypoint[] = [];
+    
+    // Construir waypoints baseado na rota otimizada (excluindo início e fim)
+    for (let i = 1; i < this.results.optimizedRoute.length - 1; i++) {
+      const routeIndex = this.results.optimizedRoute[i];
+      
+      if (routeIndex === 0) {
+        // Se for 0 (ponto de início) no meio da rota
+        waypoints.push({
+          location: new google.maps.LatLng(this.startLocation.latitude, this.startLocation.longitude),
+          stopover: true
+        });
+      } else {
+        // Se for uma entrega
+        const deliveryIndex = routeIndex - 1;
+        if (deliveryIndex >= 0 && deliveryIndex < this.results.deliveryOrder.length) {
+          const delivery = this.results.deliveryOrder[deliveryIndex];
+          waypoints.push({
+            location: new google.maps.LatLng(delivery.location.latitude, delivery.location.longitude),
+            stopover: true
+          });
+        }
+      }
+    }
+
+    // Definir origem e destino
+    const origin = new google.maps.LatLng(this.startLocation.latitude, this.startLocation.longitude);
+    const destination = new google.maps.LatLng(this.startLocation.latitude, this.startLocation.longitude);
+
+    // Fazer a requisição ao DirectionsService
+    const request: google.maps.DirectionsRequest = {
+      origin: origin,
+      destination: destination,
+      waypoints: waypoints,
+      optimizeWaypoints: false, // Não otimizar, usar a ordem já definida
+      travelMode: google.maps.TravelMode.DRIVING,
+      unitSystem: google.maps.UnitSystem.METRIC,
+      avoidHighways: false,
+      avoidTolls: false
+    };
+
+    this.directionsService.route(request, (result, status) => {
+      this.isLoadingRoute = false;
+      
+      if (status === google.maps.DirectionsStatus.OK && result) {
+        // Sucesso - usar DirectionsRenderer
+        this.showDirections = true;
+        
+        // Configurar o renderer com o mapa quando ele estiver disponível
+        setTimeout(() => {
+          if (this.mapInstance) {
+            this.directionsRenderer.setMap(this.mapInstance);
+            this.directionsRenderer.setDirections(result);
+          }
+        }, 100);
+      } else {
+        // Falha - continuar usando polyline simples
+        console.warn('Não foi possível calcular a rota real:', status);
+        this.showDirections = false;
+      }
+    });
   }
 
   private calculateMapCenter(): void {
@@ -338,5 +453,14 @@ export class RouteMapComponent implements OnChanges {
         fontWeight: 'bold'
       }
     };
+  }
+
+  onMapInitialized(map: google.maps.Map): void {
+    this.mapInstance = map;
+    
+    // Se já temos dados, recalcular a rota real
+    if (this.results && this.startLocation) {
+      this.calculateRealRoute();
+    }
   }
 }

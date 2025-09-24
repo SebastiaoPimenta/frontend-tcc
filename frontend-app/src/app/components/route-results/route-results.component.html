@@ -95,11 +95,11 @@
     <div class="route-sequence">
       <h4>Sequência da Rota:</h4>
       <div class="sequence-chips">
-        <span class="sequence-chip start">Início</span>
         <span 
-          *ngFor="let index of results.optimizedRoute; let i = index"
-          class="sequence-chip">
-          {{ index + 1 }}
+          *ngFor="let index of results.optimizedRoute"
+          class="sequence-chip"
+          [ngClass]="getSequenceChipClass(index)">
+          {{ getSequenceLabel(index) }}
         </span>
       </div>
     </div>
