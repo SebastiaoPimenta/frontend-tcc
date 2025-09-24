@@ -39,7 +39,7 @@ import { Location } from '../../models/location.interface';
 
           <!-- Linhas da rota (apenas se não estiver usando directions) -->
           <map-polyline
-            *ngIf="routePath.length > 1 && !showDirections && !isLoadingRoute"
+            *ngIf="routePath.length > 1 && !showDirections && shouldShowPolyline"
             [path]="routePath"
             [options]="polylineOptions">
           </map-polyline>
@@ -209,6 +209,7 @@ export class RouteMapComponent implements OnInit, OnChanges {
   routePath: google.maps.LatLngLiteral[] = [];
   showDirections = false; // Para controlar quando mostrar directions vs polyline
   isLoadingRoute = false; // Para mostrar loading da rota real
+  shouldShowPolyline = true; // Controla se deve mostrar polyline inicialmente
 
   ngOnInit(): void {
     // Inicializar serviços do Google Maps quando disponível
@@ -299,6 +300,7 @@ export class RouteMapComponent implements OnInit, OnChanges {
     }
 
     this.isLoadingRoute = true;
+    this.shouldShowPolyline = false; // Esconder polyline enquanto carrega rota real
 
     // Preparar waypoints para o DirectionsService
     const waypoints: google.maps.DirectionsWaypoint[] = [];
@@ -348,6 +350,7 @@ export class RouteMapComponent implements OnInit, OnChanges {
       if (status === google.maps.DirectionsStatus.OK && result) {
         // Sucesso - usar DirectionsRenderer
         this.showDirections = true;
+        this.shouldShowPolyline = false; // Manter polyline escondida
         
         // Configurar o renderer com o mapa quando ele estiver disponível
         setTimeout(() => {
@@ -357,9 +360,10 @@ export class RouteMapComponent implements OnInit, OnChanges {
           }
         }, 100);
       } else {
-        // Falha - continuar usando polyline simples
+        // Falha - voltar para polyline simples
         console.warn('Não foi possível calcular a rota real:', status);
         this.showDirections = false;
+        this.shouldShowPolyline = true; // Mostrar polyline como fallback
       }
     });
   }
@@ -448,8 +452,8 @@ export class RouteMapComponent implements OnInit, OnChanges {
     const isLast = sequenceIndex === (this.results?.optimizedRoute.length || 0) - 1;
     
     let color = '#3b82f6'; // Azul para entregas normais
-    if (isFirst) color = '#22c55e'; // Verde para início
-    if (isLast) color = '#ef4444';  // Vermelho para fim (retorno)
+    // Unificar início e retorno com a mesma cor verde
+    if (isFirst || isLast) color = '#22c55e'; // Verde para início/retorno
 
     return {
       icon: {
