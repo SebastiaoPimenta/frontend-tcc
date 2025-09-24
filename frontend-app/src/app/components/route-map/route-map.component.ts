@@ -29,12 +29,26 @@ import { Location } from '../../models/location.interface';
           [options]="mapOptions"
           (mapInitialized)="onMapInitialized($event)">
           
-          <!-- Marcadores baseados na sequência otimizada -->
+          <!-- Marcador do ponto inicial -->
           <map-marker
-            *ngFor="let routeIndex of results.optimizedRoute; let sequenceIndex = index"
-            [position]="getMarkerPosition(routeIndex)"
-            [title]="getMarkerTitle(routeIndex, sequenceIndex)"
-            [options]="getMarkerOptions(sequenceIndex)">
+            [position]="getStartLocationPosition()"
+            [title]="getStartLocationTitle()"
+            [options]="getStartLocationMarkerOptions()">
+          </map-marker>
+          
+          <!-- Marcadores das entregas (já ordenadas) -->
+          <map-marker
+            *ngFor="let delivery of results.deliveryOrder; let deliveryIndex = index"
+            [position]="getDeliveryPosition(delivery)"
+            [title]="getDeliveryTitle(delivery, deliveryIndex)"
+            [options]="getDeliveryMarkerOptions(deliveryIndex)">
+          </map-marker>
+          
+          <!-- Marcador do ponto final (retorno) -->
+          <map-marker
+            [position]="getEndLocationPosition()"
+            [title]="getEndLocationTitle()"
+            [options]="getEndLocationMarkerOptions()">
           </map-marker>
 
           <!-- Linhas da rota (apenas se não estiver usando directions) -->
@@ -260,36 +274,35 @@ export class RouteMapComponent implements OnInit, OnChanges {
   private buildOptimizedRoutePath(): google.maps.LatLngLiteral[] {
     const path: google.maps.LatLngLiteral[] = [];
     
-    if (!this.results?.optimizedRoute || !this.startLocation) {
+    if (!this.results?.deliveryOrder || !this.startLocation) {
       return path;
     }
 
-    // Para cada índice na rota otimizada
-    for (const index of this.results.optimizedRoute) {
-      if (index === 0) {
-        // Índice 0 = ponto de início
-        path.push({
-          lat: this.startLocation.latitude,
-          lng: this.startLocation.longitude
-        });
-      } else {
-        // Índices > 0 = entregas (ajustar por -1 pois o array de deliveries é 0-indexed)
-        const deliveryIndex = index - 1;
-        if (deliveryIndex >= 0 && deliveryIndex < this.results.deliveryOrder.length) {
-          const delivery = this.results.deliveryOrder[deliveryIndex];
-          path.push({
-            lat: delivery.location.latitude,
-            lng: delivery.location.longitude
-          });
-        }
-      }
+    // Começar com o ponto inicial
+    path.push({
+      lat: this.startLocation.latitude,
+      lng: this.startLocation.longitude
+    });
+
+    // Adicionar todas as entregas na ordem já otimizada
+    for (const delivery of this.results.deliveryOrder) {
+      path.push({
+        lat: delivery.location.latitude,
+        lng: delivery.location.longitude
+      });
     }
+
+    // Finalizar com o retorno ao ponto inicial
+    path.push({
+      lat: this.startLocation.latitude,
+      lng: this.startLocation.longitude
+    });
 
     return path;
   }
 
   private calculateRealRoute(): void {
-    if (!this.results?.optimizedRoute || !this.startLocation || this.routePath.length < 2) {
+    if (!this.results?.deliveryOrder || !this.startLocation || this.routePath.length < 2) {
       return;
     }
 
@@ -302,33 +315,18 @@ export class RouteMapComponent implements OnInit, OnChanges {
     this.isLoadingRoute = true;
     this.shouldShowPolyline = false; // Esconder polyline enquanto carrega rota real
 
-    // Preparar waypoints para o DirectionsService
+    // Preparar waypoints para o DirectionsService usando deliveryOrder diretamente
     const waypoints: google.maps.DirectionsWaypoint[] = [];
     
-    // Construir waypoints baseado na rota otimizada (excluindo início e fim)
-    for (let i = 1; i < this.results.optimizedRoute.length - 1; i++) {
-      const routeIndex = this.results.optimizedRoute[i];
-      
-      if (routeIndex === 0) {
-        // Se for 0 (ponto de início) no meio da rota
-        waypoints.push({
-          location: new google.maps.LatLng(this.startLocation.latitude, this.startLocation.longitude),
-          stopover: true
-        });
-      } else {
-        // Se for uma entrega
-        const deliveryIndex = routeIndex - 1;
-        if (deliveryIndex >= 0 && deliveryIndex < this.results.deliveryOrder.length) {
-          const delivery = this.results.deliveryOrder[deliveryIndex];
-          waypoints.push({
-            location: new google.maps.LatLng(delivery.location.latitude, delivery.location.longitude),
-            stopover: true
-          });
-        }
-      }
+    // Adicionar todas as entregas como waypoints (já estão na ordem correta)
+    for (const delivery of this.results.deliveryOrder) {
+      waypoints.push({
+        location: new google.maps.LatLng(delivery.location.latitude, delivery.location.longitude),
+        stopover: true
+      });
     }
 
-    // Definir origem e destino
+    // Definir origem e destino (ambos são o ponto inicial)
     const origin = new google.maps.LatLng(this.startLocation.latitude, this.startLocation.longitude);
     const destination = new google.maps.LatLng(this.startLocation.latitude, this.startLocation.longitude);
 
@@ -337,7 +335,7 @@ export class RouteMapComponent implements OnInit, OnChanges {
       origin: origin,
       destination: destination,
       waypoints: waypoints,
-      optimizeWaypoints: false, // Não otimizar, usar a ordem já definida
+      optimizeWaypoints: false, // Não otimizar, usar a ordem já definida pelo backend
       travelMode: google.maps.TravelMode.DRIVING,
       unitSystem: google.maps.UnitSystem.METRIC,
       avoidHighways: false,
@@ -417,74 +415,94 @@ export class RouteMapComponent implements OnInit, OnChanges {
     else this.mapZoom = 14;
   }
 
-  getMarkerPosition(routeIndex: number): google.maps.LatLngLiteral {
-    if (routeIndex === 0 && this.startLocation) {
-      // Índice 0 = ponto de início
-      return {
-        lat: this.startLocation.latitude,
-        lng: this.startLocation.longitude
-      };
-    } else {
-      // Índices > 0 = entregas (ajustar por -1)
-      const deliveryIndex = routeIndex - 1;
-      if (deliveryIndex >= 0 && deliveryIndex < (this.results?.deliveryOrder.length || 0)) {
-        const delivery = this.results!.deliveryOrder[deliveryIndex];
-        return {
-          lat: delivery.location.latitude,
-          lng: delivery.location.longitude
-        };
-      }
-    }
-    return { lat: 0, lng: 0 }; // Fallback
+
+
+  // Funções para o ponto inicial
+  getStartLocationPosition(): google.maps.LatLngLiteral {
+    return {
+      lat: this.startLocation!.latitude,
+      lng: this.startLocation!.longitude
+    };
   }
 
-  getMarkerTitle(routeIndex: number, sequenceIndex: number): string {
-    const isFirst = sequenceIndex === 0;
-    const isLast = sequenceIndex === (this.results?.optimizedRoute.length || 0) - 1;
-    
-    if (routeIndex === 0) {
-      // Ponto de início
-      const position = isFirst ? 'Início' : 'Retorno';
-      return `${position}: ${this.startLocation?.address || 'Ponto de partida'}`;
-    } else {
-      // Entrega
-      const deliveryIndex = routeIndex - 1;
-      if (deliveryIndex >= 0 && deliveryIndex < (this.results?.deliveryOrder.length || 0)) {
-        const delivery = this.results!.deliveryOrder[deliveryIndex];
-        return `Entrega ${sequenceIndex}: ${delivery.customerName} - ${delivery.location.address}`;
-      }
-    }
-    return `Ponto ${sequenceIndex + 1}`;
+  getStartLocationTitle(): string {
+    return `Início: ${this.startLocation?.address || 'Ponto de partida'}`;
   }
 
-  getMarkerOptions(sequenceIndex: number): google.maps.MarkerOptions {
-    const isFirst = sequenceIndex === 0;
-    const isLast = sequenceIndex === (this.results?.optimizedRoute.length || 0) - 1;
-    
-    let color = '#3b82f6'; // Azul para entregas normais
-    let labelText = '';
-    
-    // Unificar início e retorno com a mesma cor verde
-    if (isFirst || isLast) {
-      color = '#22c55e'; // Verde para início/retorno
-      labelText = 'P'; // "P" de Partida para início e fim
-    } else {
-      // Para entregas: numeração sequencial começando em 1
-      // sequenceIndex - 1 porque tiramos o ponto inicial da contagem
-      labelText = sequenceIndex.toString();
-    }
-
+  getStartLocationMarkerOptions(): google.maps.MarkerOptions {
     return {
       icon: {
         path: google.maps.SymbolPath.CIRCLE,
         scale: 8,
-        fillColor: color,
+        fillColor: '#22c55e', // Verde para início
         fillOpacity: 1,
         strokeColor: '#ffffff',
         strokeWeight: 2
       },
       label: {
-        text: labelText,
+        text: 'P',
+        color: 'white',
+        fontSize: '12px',
+        fontWeight: 'bold'
+      }
+    };
+  }
+
+  // Funções para as entregas
+  getDeliveryPosition(delivery: any): google.maps.LatLngLiteral {
+    return {
+      lat: delivery.location.latitude,
+      lng: delivery.location.longitude
+    };
+  }
+
+  getDeliveryTitle(delivery: any, deliveryIndex: number): string {
+    return `Entrega ${deliveryIndex + 1}: ${delivery.customerName} - ${delivery.location.address}`;
+  }
+
+  getDeliveryMarkerOptions(deliveryIndex: number): google.maps.MarkerOptions {
+    return {
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 8,
+        fillColor: '#3b82f6', // Azul para entregas
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 2
+      },
+      label: {
+        text: (deliveryIndex + 1).toString(), // Numeração sequencial
+        color: 'white',
+        fontSize: '12px',
+        fontWeight: 'bold'
+      }
+    };
+  }
+
+  // Funções para o ponto final
+  getEndLocationPosition(): google.maps.LatLngLiteral {
+    return {
+      lat: this.startLocation!.latitude,
+      lng: this.startLocation!.longitude
+    };
+  }
+
+  getEndLocationTitle(): string {
+    return `Retorno: ${this.startLocation?.address || 'Ponto de partida'}`;
+  }
+
+  getEndLocationMarkerOptions(): google.maps.MarkerOptions {
+    return {
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 8,
+        fillColor: '#22c55e', // Verde para retorno
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 2
+      },
+      label: {
+        text: 'P',
         color: 'white',
         fontSize: '12px',
         fontWeight: 'bold'
