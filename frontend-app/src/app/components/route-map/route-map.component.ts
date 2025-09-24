@@ -215,16 +215,26 @@ export class RouteMapComponent implements OnInit, OnChanges {
   isLoadingRoute = false; // Para mostrar loading da rota real
 
   ngOnInit(): void {
-    // Inicializar serviços do Google Maps
-    this.directionsService = new google.maps.DirectionsService();
-    this.directionsRenderer = new google.maps.DirectionsRenderer({
-      suppressMarkers: true, // Não mostrar marcadores padrão
-      polylineOptions: {
-        strokeColor: '#3b82f6',
-        strokeOpacity: 1.0,
-        strokeWeight: 4
-      }
-    });
+    // Inicializar serviços do Google Maps quando disponível
+    this.initializeGoogleMapsServices();
+  }
+
+  private initializeGoogleMapsServices(): void {
+    // Verificar se Google Maps está disponível
+    if (typeof google !== 'undefined' && google.maps) {
+      this.directionsService = new google.maps.DirectionsService();
+      this.directionsRenderer = new google.maps.DirectionsRenderer({
+        suppressMarkers: true, // Não mostrar marcadores padrão
+        polylineOptions: {
+          strokeColor: '#3b82f6',
+          strokeOpacity: 1.0,
+          strokeWeight: 4
+        }
+      });
+    } else {
+      // Tentar novamente após um delay
+      setTimeout(() => this.initializeGoogleMapsServices(), 100);
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -244,8 +254,10 @@ export class RouteMapComponent implements OnInit, OnChanges {
     // Calcular o centro do mapa baseado nas coordenadas
     this.calculateMapCenter();
 
-    // Calcular rota real usando Google Directions
-    this.calculateRealRoute();
+    // Calcular rota real usando Google Directions (apenas se o mapa estiver pronto)
+    if (this.mapInstance) {
+      setTimeout(() => this.calculateRealRoute(), 200);
+    }
   }
 
   private buildOptimizedRoutePath(): google.maps.LatLngLiteral[] {
@@ -281,6 +293,12 @@ export class RouteMapComponent implements OnInit, OnChanges {
 
   private calculateRealRoute(): void {
     if (!this.results?.optimizedRoute || !this.startLocation || this.routePath.length < 2) {
+      return;
+    }
+
+    // Verificar se os serviços do Google Maps estão disponíveis
+    if (!this.directionsService || !google?.maps?.DirectionsService) {
+      console.warn('Google Maps DirectionsService não está disponível');
       return;
     }
 
@@ -458,9 +476,15 @@ export class RouteMapComponent implements OnInit, OnChanges {
   onMapInitialized(map: google.maps.Map): void {
     this.mapInstance = map;
     
+    // Garantir que os serviços estão inicializados
+    if (!this.directionsService) {
+      this.initializeGoogleMapsServices();
+    }
+    
     // Se já temos dados, recalcular a rota real
     if (this.results && this.startLocation) {
-      this.calculateRealRoute();
+      // Aguardar um pouco para garantir que tudo está pronto
+      setTimeout(() => this.calculateRealRoute(), 300);
     }
   }
 }
