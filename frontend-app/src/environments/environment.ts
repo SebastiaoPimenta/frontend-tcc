@@ -1,5 +1,5 @@
 export const environment = {
-  production: false,
+  production: true,
   googleMapsApiKey: 'AIzaSyCDH0mZmx5Q0AKArGle-AbyTZWFcdgJ73k',
-  backendUrl: 'http://localhost:8080'
+  backendUrl: 'https://backend-tcc-production-7fc1.up.railway.app'
 };
