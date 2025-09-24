@@ -1,10 +1,11 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouteOptimizationResponse } from '../../models/route-optimization-response.interface';
+import { RouteMapComponent } from '../route-map/route-map.component';
 
 @Component({
   selector: 'app-route-results',
-  imports: [CommonModule],
+  imports: [CommonModule, RouteMapComponent],
   templateUrl: './route-results.component.html',
   styleUrl: './route-results.component.css'
 })
