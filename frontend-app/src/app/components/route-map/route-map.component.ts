@@ -209,7 +209,7 @@ export class RouteMapComponent implements OnInit, OnChanges {
   routePath: google.maps.LatLngLiteral[] = [];
   showDirections = false; // Para controlar quando mostrar directions vs polyline
   isLoadingRoute = false; // Para mostrar loading da rota real
-  shouldShowPolyline = true; // Controla se deve mostrar polyline inicialmente
+  shouldShowPolyline = false; // Inicialmente não mostrar polyline até falhar directions
 
   ngOnInit(): void {
     // Inicializar serviços do Google Maps quando disponível
@@ -350,7 +350,10 @@ export class RouteMapComponent implements OnInit, OnChanges {
       if (status === google.maps.DirectionsStatus.OK && result) {
         // Sucesso - usar DirectionsRenderer
         this.showDirections = true;
-        this.shouldShowPolyline = false; // Manter polyline escondida
+        this.shouldShowPolyline = false; // Esconder polyline
+        
+        // Limpar qualquer direção anterior
+        this.directionsRenderer.setMap(null);
         
         // Configurar o renderer com o mapa quando ele estiver disponível
         setTimeout(() => {
@@ -359,11 +362,18 @@ export class RouteMapComponent implements OnInit, OnChanges {
             this.directionsRenderer.setDirections(result);
           }
         }, 100);
+        
+        console.log('Rota real calculada - polyline deve estar escondida');
       } else {
         // Falha - voltar para polyline simples
         console.warn('Não foi possível calcular a rota real:', status);
         this.showDirections = false;
         this.shouldShowPolyline = true; // Mostrar polyline como fallback
+        
+        // Remover o DirectionsRenderer em caso de falha
+        this.directionsRenderer.setMap(null);
+        
+        console.log('Falha na rota real - usando polyline como fallback');
       }
     });
   }
@@ -480,6 +490,10 @@ export class RouteMapComponent implements OnInit, OnChanges {
     if (!this.directionsService) {
       this.initializeGoogleMapsServices();
     }
+    
+    // Limpar estado anterior
+    this.showDirections = false;
+    this.shouldShowPolyline = false;
     
     // Se já temos dados, recalcular a rota real
     if (this.results && this.startLocation) {
