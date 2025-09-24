@@ -1,6 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouteOptimizationResponse } from '../../models/route-optimization-response.interface';
+import { Location } from '../../models/location.interface';
 import { RouteMapComponent } from '../route-map/route-map.component';
 
 @Component({
@@ -11,6 +12,7 @@ import { RouteMapComponent } from '../route-map/route-map.component';
 })
 export class RouteResultsComponent {
   @Input() results: RouteOptimizationResponse | null = null;
+  @Input() startLocation: Location | null = null;
   @Input() isLoading = false;
   @Input() error: string | null = null;
 
