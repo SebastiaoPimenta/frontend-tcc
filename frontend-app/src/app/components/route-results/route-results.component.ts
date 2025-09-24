@@ -35,12 +35,4 @@ export class RouteResultsComponent {
     if (!this.results) return '';
     return this.results.feasible ? '✅' : '⚠️';
   }
-
-  getSequenceLabel(index: number): string {
-    return index === 0 ? 'Início/Fim' : index.toString();
-  }
-
-  getSequenceChipClass(index: number): string {
-    return index === 0 ? 'start' : '';
-  }
 }

@@ -39,7 +39,7 @@ import { Location } from '../../models/location.interface';
 
           <!-- Linhas da rota (apenas se não estiver usando directions) -->
           <map-polyline
-            *ngIf="routePath.length > 1 && !showDirections"
+            *ngIf="routePath.length > 1 && !showDirections && !isLoadingRoute"
             [path]="routePath"
             [options]="polylineOptions">
           </map-polyline>
@@ -49,15 +49,11 @@ import { Location } from '../../models/location.interface';
         <div class="route-legend">
           <div class="legend-item">
             <div class="legend-marker start"></div>
-            <span>Ponto de Partida</span>
+            <span>Início/Retorno</span>
           </div>
           <div class="legend-item">
             <div class="legend-marker delivery"></div>
             <span>Entregas</span>
-          </div>
-          <div class="legend-item">
-            <div class="legend-marker end"></div>
-            <span>Ponto Final</span>
           </div>
         </div>
 

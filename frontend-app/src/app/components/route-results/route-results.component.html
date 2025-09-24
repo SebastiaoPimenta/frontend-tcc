@@ -91,19 +91,6 @@
       </div>
     </div>
 
-    <!-- Sequência de Índices -->
-    <div class="route-sequence">
-      <h4>Sequência da Rota:</h4>
-      <div class="sequence-chips">
-        <span 
-          *ngFor="let index of results.optimizedRoute"
-          class="sequence-chip"
-          [ngClass]="getSequenceChipClass(index)">
-          {{ getSequenceLabel(index) }}
-        </span>
-      </div>
-    </div>
-
     <!-- Mapa da Rota Otimizada -->
     <app-route-map [results]="results" [startLocation]="startLocation"></app-route-map>
   </div>
