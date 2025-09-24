@@ -462,8 +462,17 @@ export class RouteMapComponent implements OnInit, OnChanges {
     const isLast = sequenceIndex === (this.results?.optimizedRoute.length || 0) - 1;
     
     let color = '#3b82f6'; // Azul para entregas normais
+    let labelText = '';
+    
     // Unificar início e retorno com a mesma cor verde
-    if (isFirst || isLast) color = '#22c55e'; // Verde para início/retorno
+    if (isFirst || isLast) {
+      color = '#22c55e'; // Verde para início/retorno
+      labelText = 'P'; // "P" de Partida para início e fim
+    } else {
+      // Para entregas: numeração sequencial começando em 1
+      // sequenceIndex - 1 porque tiramos o ponto inicial da contagem
+      labelText = sequenceIndex.toString();
+    }
 
     return {
       icon: {
@@ -475,7 +484,7 @@ export class RouteMapComponent implements OnInit, OnChanges {
         strokeWeight: 2
       },
       label: {
-        text: (sequenceIndex + 1).toString(),
+        text: labelText,
         color: 'white',
         fontSize: '12px',
         fontWeight: 'bold'
